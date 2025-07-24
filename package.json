@@ -11,7 +11,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "transpile:electron": "tsc --project tsconfig.electron.json",
-    "dev": "yarn transpile:electron && concurrently \"yarn dev:react\" \"yarn dev:electron\"",
+    "dev": "yarn transpile:electron && node scripts/dev.js",
     "dist:mac": "yarn transpile:electron && yarn build && electron-builder --mac --arm64",
     "dist:win": "yarn transpile:electron && yarn build && electron-builder --win --x64",
     "dist:linux": "yarn transpile:electron && yarn build && electron-builder --linux --x64"
@@ -34,8 +34,10 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.21",
+    "chalk": "^5.4.1",
     "concurrently": "^9.2.0",
     "cross-env": "^7.0.3",
+    "dotenv-cli": "^9.0.0",
     "electron": "^37.2.4",
     "electron-builder": "26.0.12",
     "eslint": "^9.30.1",
@@ -47,7 +49,8 @@
     "tw-animate-css": "^1.3.5",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.35.1",
-    "vite": "^7.0.4"
+    "vite": "^7.0.4",
+    "wait-on": "^8.0.4"
   },
   "packageManager": "yarn@4.9.2+sha512.1fc009bc09d13cfd0e19efa44cbfc2b9cf6ca61482725eb35bbc5e257e093ebf4130db6dfe15d604ff4b79efd8e1e8e99b25fa7d0a6197c9f9826358d4d65c3c"
 }

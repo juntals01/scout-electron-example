@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import './App.css';
 import reactLogo from './assets/react.svg';
@@ -7,7 +8,12 @@ function App() {
 
   return (
     <>
-      <h1 className='text-3xl font-bold underline'>Hello world! yaho!</h1>
+      <h1 className='text-3xl font-bold underline text-red-500'>
+        Hello world! yaho!
+      </h1>
+      <Button asChild>
+        <a href='/login'>Login</a>
+      </Button>
       <div>
         <a href='https://react.dev' target='_blank'>
           <img src={reactLogo} className='logo react' alt='React logo' />

@@ -34,25 +34,37 @@ yarn install
 
 > ⚠️ This project uses Yarn 4 with Plug'n'Play (PnP). You will not see a `node_modules/` folder.
 
+### 3. Set up environment variables
+
+Copy the example file:
+
+```bash
+cp .env.local.example .env.local
+```
+
 ---
 
 ## 💻 Running the App (Development)
 
-In **two separate terminals**, run:
-
-### Terminal 1 — Start Vite React frontend
+Start both the frontend and Electron in one command:
 
 ```bash
-yarn dev:react
+yarn dev
 ```
 
-### Terminal 2 — Start Electron app
+---
+
+## 🎨 Using ShadCN UI
+
+To add ShadCN components:
 
 ```bash
-yarn dev:electron
+npx shadcn@latest add button
 ```
 
-Electron will load the compiled Vite output from `dist-react/index.html`.
+> Make sure your `tsconfig.json` has the `@/*` path alias mapped to `src/*`.
+
+For setup help, see: https://ui.shadcn.com/docs/installation/vite
 
 ---
 

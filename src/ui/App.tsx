@@ -43,6 +43,8 @@ function App() {
           onLanguageChange={setLanguage}
         />
         <TranslationPanel />
+        <TranslationPanel />
+
         <div className='mt-6 text-center text-sm text-gray-500 dark:text-gray-400'>
           <p>Click Listen to start recording and get real-time translations</p>
           <p className='mt-1'>

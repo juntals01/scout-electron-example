@@ -3,6 +3,8 @@ import useSpeechRecognition from '../lib/useSpeechRecognition';
 import './App.css';
 import AppHeader from './components/AppHeader';
 import LiveCaptionPanel from './components/LiveCaptionPanel';
+import TranslationPanel from './components/TranslationPanel';
+import TranslationStatusBar from './components/TranslationStatusBar';
 
 function App() {
   const [fontSize, setFontSize] = useState('X-Large');
@@ -40,6 +42,14 @@ function App() {
           language={language}
           onLanguageChange={setLanguage}
         />
+        <TranslationPanel />
+        <div className='mt-6 text-center text-sm text-gray-500 dark:text-gray-400'>
+          <p>Click Listen to start recording and get real-time translations</p>
+          <p className='mt-1'>
+            Engine: <span className='font-medium capitalize'>offline</span>
+          </p>
+        </div>
+        <TranslationStatusBar />
       </div>
     </div>
   );

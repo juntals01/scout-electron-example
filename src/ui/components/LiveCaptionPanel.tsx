@@ -1,16 +1,11 @@
 import { Volume2 } from 'lucide-react';
-
-type Props = {
-  text: string;
-  language: string;
-  onLanguageChange: (lang: string) => void;
-};
+import type { LiveCaptionProps } from '../../types/pages/livecaption.type';
 
 export default function LiveCaptionPanel({
   text,
   language,
   onLanguageChange,
-}: Props) {
+}: LiveCaptionProps) {
   return (
     <div className='bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6'>
       <div className='flex items-center justify-between mb-6'>

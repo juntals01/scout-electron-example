@@ -1,11 +1,10 @@
 import { Minus, Plus } from 'lucide-react';
+import type { FontControlProps } from '../../types/pages/fontsize.type';
 
-type Props = {
-  fontSize: string;
-  onChange: (dir: 'up' | 'down') => void;
-};
-
-export default function FontSizeControl({ fontSize, onChange }: Props) {
+export default function FontSizeControl({
+  fontSize,
+  onChange,
+}: FontControlProps) {
   return (
     <div className='flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1'>
       <button onClick={() => onChange('down')} className='icon-button'>

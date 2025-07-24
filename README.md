@@ -36,7 +36,7 @@ yarn install
 
 ---
 
-## 💻 Running the App
+## 💻 Running the App (Development)
 
 In **two separate terminals**, run:
 
@@ -62,37 +62,37 @@ Electron will load the compiled Vite output from `dist-react/index.html`.
 yarn build
 ```
 
-This will compile both TypeScript and your Vite app.
+This will compile both the Electron backend (`tsconfig.electron.json`) and the Vite frontend into production output.
 
 ---
 
-## 🧹 ESLint Configuration (Optional)
+## 🛠️ Create App Distributions
 
-To enable type-aware and React-specific lint rules, you can use the following config:
+Electron Builder will package the app for your platform.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x';
-import reactDom from 'eslint-plugin-react-dom';
+### macOS (ARM64 M1/M2)
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      ...tseslint.configs.recommendedTypeChecked,
-      reactX.configs['recommended-typescript'],
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-  },
-]);
+```bash
+yarn dist:mac
 ```
+
+### Windows (x64)
+
+```bash
+yarn dist:win
+```
+
+### Linux (x64)
+
+```bash
+yarn dist:linux
+```
+
+> These commands run:
+>
+> - `yarn transpile:electron` – compiles Electron backend
+> - `yarn build` – builds the Vite React frontend
+> - `electron-builder` – packages the final app
 
 ---
 
@@ -103,6 +103,8 @@ src/
   ├─ electron/         # Electron main process
   └─ ui/               # React frontend
 dist-react/            # Vite build output
+dist-electron/         # Electron build output (tsc)
+dist/                  # build installer output
 ```
 
 ---

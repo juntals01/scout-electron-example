@@ -22,3 +22,18 @@ dist-react
 *.njsproj
 *.sln
 *.sw?
+
+
+# Yarn PnP files to ignore
+.yarn/install-state.gz
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/cache/
+
+# Optional: Ignore cache if not doing zero-install
+
+# Always keep:
+# .yarnrc.yml
+# .pnp.cjs
+# yarn.lock
+

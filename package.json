@@ -11,12 +11,14 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "transpile:electron": "tsc --project tsconfig.electron.json",
+    "dev": "yarn transpile:electron && concurrently \"yarn dev:react\" \"yarn dev:electron\"",
     "dist:mac": "yarn transpile:electron && yarn build && electron-builder --mac --arm64",
     "dist:win": "yarn transpile:electron && yarn build && electron-builder --win --x64",
     "dist:linux": "yarn transpile:electron && yarn build && electron-builder --linux --x64"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
+    "dotenv": "^17.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
@@ -26,6 +28,7 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.21",
+    "cross-env": "^7.0.3",
     "electron": "^37.2.4",
     "electron-builder": "26.0.12",
     "eslint": "^9.30.1",

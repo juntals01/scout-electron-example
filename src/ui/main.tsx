@@ -4,6 +4,8 @@ import App from './App.tsx';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <div className='min-h-screen overflow-y-auto bg-background text-foreground'>
+      <App />
+    </div>
   </StrictMode>
 );

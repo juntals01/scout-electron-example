@@ -4,7 +4,7 @@ export default function useSpeechRecognition(language: string) {
   const [text, setText] = useState('');
   const [listening, setListening] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null); // 🔥 track the mic stream
+  const streamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
   const start = async () => {
@@ -14,29 +14,37 @@ export default function useSpeechRecognition(language: string) {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream; // save stream so we can stop it later
+      streamRef.current = stream;
 
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        // audioChunksRef.current.push(event.data);
-        console.log('data available');
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+          console.log('data available');
+        }
       };
 
       mediaRecorder.onstop = async () => {
-        // const audioBlob = new Blob(audioChunksRef.current, {
-        //   type: 'audio/wav',
-        // });
-        // const arrayBuffer = await audioBlob.arrayBuffer();
-        // const buffer = Buffer.from(arrayBuffer);
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: 'audio/wav',
+        });
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        const buffer = new Uint8Array(arrayBuffer); // ✅ use this instead of Buffer
 
-        console.log('buffer');
+        console.log('buffer ready');
 
-        // const wavPath = window.electronAPI.saveTempWav(buffer);
-        // const transcript = await window.electronAPI.transcribeAudio(wavPath);
-        setText('transcript');
+        try {
+          const wavPath = await window.electronAPI.saveTempWav(buffer);
+          const transcript = await window.electronAPI.transcribeAudio(wavPath);
+          setText(transcript);
+        } catch (err) {
+          console.error('Transcription error:', err);
+          setText('[Transcription failed]');
+        }
+
         setListening(false);
       };
 
@@ -58,7 +66,6 @@ export default function useSpeechRecognition(language: string) {
       console.warn('Cannot stop — recorder is not recording');
     }
 
-    // 🔥 Stop all mic tracks to remove macOS mic tray icon
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;

@@ -1,3 +1,4 @@
+import { execFile, spawn } from 'child_process';
 import * as dotenv from 'dotenv';
 import {
   app,
@@ -6,22 +7,23 @@ import {
   shell,
   systemPreferences,
 } from 'electron';
+import ffmpegPath from 'ffmpeg-static';
+import { readFile, writeFile } from 'fs/promises';
+import { tmpdir } from 'os';
 import path from 'path';
-import { getPreloadPath } from './pathResolver.js';
+import { promisify } from 'util';
+import { getPreloadPath, getWhisperPath } from './pathResolver.js';
 import { isDev } from './util.js';
 
 dotenv.config({ path: '.env.local' });
 
-// ✅ Enable media and speech APIs for Electron dev window
 app.commandLine.appendSwitch('enable-media-stream');
-app.commandLine.appendSwitch('enable-speech-api'); // <- required for Web Speech
-app.commandLine.appendSwitch('enable-speech-dispatcher'); // <- improves compatibility (Linux)
+app.commandLine.appendSwitch('enable-speech-api');
+app.commandLine.appendSwitch('enable-speech-dispatcher');
 
-// 🔐 Handle permission requests from the renderer (mic/camera)
 ipcMain.handle('check-microphone-permission', async () => {
-  const hasPermission =
-    systemPreferences.getMediaAccessStatus('microphone') === 'granted';
-  if (hasPermission) return true;
+  const status = systemPreferences.getMediaAccessStatus('microphone');
+  if (status === 'granted') return true;
 
   if (process.platform === 'darwin') {
     const granted = await systemPreferences.askForMediaAccess('microphone');
@@ -31,7 +33,9 @@ ipcMain.handle('check-microphone-permission', async () => {
       );
     }
     return granted;
-  } else if (process.platform === 'win32') {
+  }
+
+  if (process.platform === 'win32') {
     shell.openExternal('ms-settings:privacy-microphone');
   }
 
@@ -39,9 +43,8 @@ ipcMain.handle('check-microphone-permission', async () => {
 });
 
 ipcMain.handle('check-camera-permission', async () => {
-  const hasPermission =
-    systemPreferences.getMediaAccessStatus('camera') === 'granted';
-  if (hasPermission) return true;
+  const status = systemPreferences.getMediaAccessStatus('camera');
+  if (status === 'granted') return true;
 
   if (process.platform === 'darwin') {
     const granted = await systemPreferences.askForMediaAccess('camera');
@@ -51,7 +54,9 @@ ipcMain.handle('check-camera-permission', async () => {
       );
     }
     return granted;
-  } else if (process.platform === 'win32') {
+  }
+
+  if (process.platform === 'win32') {
     shell.openExternal('ms-settings:privacy-webcam');
   }
 
@@ -59,15 +64,81 @@ ipcMain.handle('check-camera-permission', async () => {
 });
 
 app.on('web-contents-created', (_event, contents) => {
-  contents.session.setPermissionRequestHandler(
-    (webContents, permission, callback) => {
-      if (permission === 'media') {
-        callback(true); // ✅ Allow mic/camera
-      } else {
-        callback(false);
-      }
-    }
-  );
+  contents.session.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback(permission === 'media');
+  });
+});
+
+const execFileAsync = promisify(execFile);
+
+ipcMain.handle('save-temp-wav', async (_event, buffer: Uint8Array) => {
+  const tempDir = tmpdir();
+  const inputPath = path.join(tempDir, `recording-${Date.now()}.webm`);
+  const outputPath = inputPath.replace('.webm', '.wav');
+
+  try {
+    // Write original webm audio to temp file
+    await writeFile(inputPath, Buffer.from(buffer));
+
+    // Convert WebM/Opus to WAV PCM 16-bit mono 16kHz
+    await execFileAsync(String(ffmpegPath), [
+      '-y',
+      '-i',
+      inputPath,
+      '-acodec',
+      'pcm_s16le',
+      '-ac',
+      '1',
+      '-ar',
+      '16000',
+      outputPath,
+    ]);
+
+    return outputPath;
+  } catch (err) {
+    console.error('❌ Failed to convert to WAV:', err);
+    throw new Error('Failed to convert audio to WAV');
+  }
+});
+
+ipcMain.handle('transcribe-audio', async (_event, wavPath: string) => {
+  const whisperBinary = getWhisperPath('whisper');
+  const modelPath = getWhisperPath('ggml-base.en.bin');
+
+  const args = [
+    wavPath,
+    '--model',
+    modelPath,
+    '--language',
+    'en',
+    '--output-txt',
+  ];
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn(whisperBinary, args);
+
+      child.stdout.on('data', (data) => {
+        console.log(`[Whisper] ${data}`);
+      });
+
+      child.stderr.on('data', (data) => {
+        console.error(`[Whisper ERROR] ${data}`);
+      });
+
+      child.on('close', (code) => {
+        code === 0
+          ? resolve()
+          : reject(new Error(`Whisper exited with code ${code}`));
+      });
+    });
+
+    const transcript = await readFile(`${wavPath}.txt`, 'utf-8');
+    return transcript.trim();
+  } catch (err) {
+    console.error('❌ Whisper transcription error:', err);
+    return '[Transcription failed]';
+  }
 });
 
 app.on('ready', () => {
@@ -81,13 +152,13 @@ app.on('ready', () => {
     webPreferences: {
       preload: getPreloadPath(),
       contextIsolation: true,
-      sandbox: false, // ✅ Optional: can help with mic/cam access in Electron dev
+      sandbox: false,
     },
   });
 
   if (isDev()) {
     mainWindow.loadURL(process.env.VITE_URL || 'http://localhost:5123');
   } else {
-    mainWindow.loadFile(path.join(app.getAppPath(), '/dist-react/index.html'));
+    mainWindow.loadFile(path.join(app.getAppPath(), 'dist-react/index.html'));
   }
 });

@@ -3,6 +3,12 @@
   "productName": "Scout Electron Example",
   "files": ["dist-electron/**/*", "dist-react"],
   "icon": "./desktopIcon.png",
+  "extraResources": [
+    {
+      "from": "public/whisper",
+      "to": "whisper"
+    }
+  ],
   "mac": {
     "target": [
       {

@@ -26,8 +26,6 @@ cd scout-electron-example
 
 ### 2. Install dependencies
 
-Use **Yarn Stable**:
-
 ```bash
 yarn install
 ```
@@ -36,17 +34,23 @@ yarn install
 
 ### 3. Set up environment variables
 
-Copy the example file:
-
 ```bash
 cp .env.local.example .env.local
+```
+
+### 4. Download Whisper Model
+
+Whisper CLI requires a model file to run speech-to-text. Since the model is >100MB, it’s not tracked in Git.
+
+```bash
+mkdir -p public/whisper
+curl -L -o public/whisper/ggml-base.en.bin \
+  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin
 ```
 
 ---
 
 ## 💻 Running the App (Development)
-
-Start both the frontend and Electron in one command:
 
 ```bash
 yarn dev
@@ -56,15 +60,11 @@ yarn dev
 
 ## 🎨 Using ShadCN UI
 
-To add ShadCN components:
-
 ```bash
 npx shadcn@latest add button
 ```
 
 > Make sure your `tsconfig.json` has the `@/*` path alias mapped to `src/*`.
-
-For setup help, see: https://ui.shadcn.com/docs/installation/vite
 
 ---
 
@@ -73,8 +73,6 @@ For setup help, see: https://ui.shadcn.com/docs/installation/vite
 ```bash
 yarn build
 ```
-
-This will compile both the Electron backend (`tsconfig.electron.json`) and the Vite frontend into production output.
 
 ---
 
@@ -100,12 +98,6 @@ yarn dist:win
 yarn dist:linux
 ```
 
-> These commands run:
->
-> - `yarn transpile:electron` – compiles Electron backend
-> - `yarn build` – builds the Vite React frontend
-> - `electron-builder` – packages the final app
-
 ---
 
 ## 📁 Folder Structure
@@ -116,7 +108,7 @@ src/
   └─ ui/               # React frontend
 dist-react/            # Vite build output
 dist-electron/         # Electron build output (tsc)
-dist/                  # build installer output
+dist/                  # Final packaged app
 ```
 
 ---

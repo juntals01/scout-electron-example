@@ -1,9 +1,24 @@
 {
   "appId": "com.scout-jun.example",
-  "files": ["dist-electron", "dist-react"],
+  "productName": "Scout Electron Example",
+  "files": ["dist-electron/**/*", "dist-react"],
   "icon": "./desktopIcon.png",
   "mac": {
-    "target": "dmg"
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["arm64"]
+      }
+    ],
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "category": "public.app-category.utilities",
+    "entitlements": "src/ui/assets/entitlements.mac.plist",
+    "entitlementsInherit": "src/ui/assets/entitlements.mac.plist",
+    "hardenedRuntime": true,
+    "extendInfo": {
+      "NSMicrophoneUsageDescription": "This app needs microphone access.",
+      "NSCameraUsageDescription": "This app needs camera access."
+    }
   },
   "linux": {
     "target": "AppImage",

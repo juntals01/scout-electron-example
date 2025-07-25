@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });
@@ -22,11 +22,21 @@ console.log(
     '\n'
 );
 
-const command = `concurrently -k -n "VITE,WAIT+ELECTRON" -c "cyan,magenta" "yarn dev:react" "wait-on ${viteUrl} && yarn dev:electron"`;
+// Define command
+const command = `cross-env ELECTRON_IS_DEV=true concurrently -k -n "VITE,WAIT+ELECTRON" -c "cyan,magenta" "yarn dev:react" "wait-on ${viteUrl} && yarn dev:electron"`;
 
 console.log(chalk.yellow('⏳ Running: ') + chalk.gray(command) + '\n');
 
-const child = exec(command, { stdio: 'inherit', shell: true });
+const child = spawn(command, {
+  stdio: 'inherit',
+  shell: true,
+});
 
-child.stdout?.pipe(process.stdout);
-child.stderr?.pipe(process.stderr);
+child.on('exit', (code) => {
+  console.log(
+    code === 0
+      ? chalk.green('\n✔ Dev environment exited cleanly.\n')
+      : chalk.red(`\n✖ Dev environment exited with code ${code}\n`)
+  );
+  process.exit(code ?? 1);
+});

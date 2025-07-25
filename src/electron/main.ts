@@ -1,18 +1,65 @@
 import * as dotenv from 'dotenv';
-import { app, BrowserWindow } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  shell,
+  systemPreferences,
+} from 'electron';
 import path from 'path';
+import { getPreloadPath } from './pathResolver.js';
 import { isDev } from './util.js';
 
 dotenv.config({ path: '.env.local' });
 
-// 👇 Allow media input (mic access)
 app.commandLine.appendSwitch('enable-media-stream');
+
+// 🔐 Handle permission requests from the renderer (mic/camera)
+ipcMain.handle('check-microphone-permission', async () => {
+  const hasPermission =
+    systemPreferences.getMediaAccessStatus('microphone') === 'granted';
+  if (hasPermission) return true;
+
+  if (process.platform === 'darwin') {
+    const granted = await systemPreferences.askForMediaAccess('microphone');
+    if (!granted) {
+      shell.openExternal(
+        'x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone'
+      );
+    }
+    return granted;
+  } else if (process.platform === 'win32') {
+    shell.openExternal('ms-settings:privacy-microphone');
+  }
+
+  return false;
+});
+
+ipcMain.handle('check-camera-permission', async () => {
+  const hasPermission =
+    systemPreferences.getMediaAccessStatus('camera') === 'granted';
+  if (hasPermission) return true;
+
+  if (process.platform === 'darwin') {
+    const granted = await systemPreferences.askForMediaAccess('camera');
+    if (!granted) {
+      shell.openExternal(
+        'x-apple.systempreferences:com.apple.preference.security?Privacy_Camera'
+      );
+    }
+    return granted;
+  } else if (process.platform === 'win32') {
+    shell.openExternal('ms-settings:privacy-webcam');
+  }
+
+  return false;
+});
 
 app.on('web-contents-created', (_event, contents) => {
   contents.session.setPermissionRequestHandler(
     (webContents, permission, callback) => {
       if (permission === 'media') {
-        callback(true); // allow mic
+        callback(true); // ✅ Allow mic/camera
       } else {
         callback(false);
       }
@@ -29,10 +76,8 @@ app.on('ready', () => {
     useContentSize: true,
     resizable: true,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      sandbox: false,
-      webSecurity: false,
+      preload: getPreloadPath(),
+      contextIsolation: true,
     },
   });
 

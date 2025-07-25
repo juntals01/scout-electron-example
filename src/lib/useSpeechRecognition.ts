@@ -4,7 +4,6 @@ export default function useSpeechRecognition(language: string) {
   const [text, setText] = useState('');
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     const SpeechRecognition =
@@ -12,65 +11,67 @@ export default function useSpeechRecognition(language: string) {
 
     if (!SpeechRecognition) return;
 
-    navigator.mediaDevices
-      .getUserMedia({ audio: true })
-      .then((stream) => {
-        streamRef.current = stream;
+    const initRecognition = async () => {
+      const micGranted = await (
+        window as any
+      ).electronAPI?.checkMicrophonePermission?.();
+      if (!micGranted) {
+        console.warn('Microphone permission not granted');
+        return;
+      }
 
-        const recognition: SpeechRecognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = language;
+      const recognition: SpeechRecognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = language;
 
-        recognition.onresult = (event: SpeechRecognitionEvent) => {
-          let finalTranscript = '';
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            finalTranscript += event.results[i][0].transcript;
-          }
-          setText(finalTranscript);
-        };
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          finalTranscript += event.results[i][0].transcript;
+        }
+        setText(finalTranscript);
+      };
 
-        recognition.onend = () => {
-          if (listening && recognitionRef.current) {
-            setTimeout(() => {
-              try {
-                recognitionRef.current!.start();
-              } catch (err) {
-                console.error('restart error', err);
-              }
-            }, 500);
-          }
-        };
+      recognition.onend = () => {
+        if (listening && recognitionRef.current) {
+          setTimeout(() => {
+            try {
+              recognitionRef.current!.start();
+            } catch (err) {
+              console.error('restart error', err);
+            }
+          }, 300);
+        }
+      };
 
-        recognition.onspeechend = () => {
-          console.log('Speech ended');
-        };
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+      };
 
-        recognition.onaudioend = () => {
-          console.log('Audio stream ended');
-        };
+      recognitionRef.current = recognition;
+    };
 
-        recognition.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
-        };
+    initRecognition();
 
-        recognitionRef.current = recognition;
-      })
-      .catch((err) => {
-        console.error('Microphone access denied:', err);
-      });
+    return () => {
+      if (recognitionRef.current) recognitionRef.current.stop();
+    };
   }, [language, listening]);
 
   const start = () => {
     if (!recognitionRef.current || listening) return;
     setText('');
     setListening(true);
-    try {
-      recognitionRef.current!.start();
-    } catch (err) {
-      console.error('Start error:', err);
-      setListening(false);
-    }
+
+    setTimeout(() => {
+      try {
+        recognitionRef.current!.start();
+      } catch (err) {
+        console.error('Start error:', err);
+        setListening(false);
+      }
+    }, 100);
   };
 
   const stop = () => {

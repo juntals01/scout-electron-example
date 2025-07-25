@@ -15,39 +15,50 @@ export default function useSpeechRecognition(language: string) {
       return;
     }
 
-    const recognition: SpeechRecognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = language;
+    const initRecognition = async () => {
+      try {
+        // 🔓 Request microphone access to ensure OS/browser permission
+        await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        finalTranscript += event.results[i][0].transcript;
-      }
-      setText(finalTranscript);
-    };
+        const recognition: SpeechRecognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = language;
 
-    recognition.onend = () => {
-      if (!manuallyStoppedRef.current && recognitionRef.current) {
-        setTimeout(() => {
-          try {
-            recognitionRef.current!.start();
-          } catch (err) {
-            console.error('restart error', err);
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          let finalTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            finalTranscript += event.results[i][0].transcript;
           }
-        }, 300);
+          setText(finalTranscript);
+        };
+
+        recognition.onend = () => {
+          if (!manuallyStoppedRef.current && recognitionRef.current) {
+            setTimeout(() => {
+              try {
+                recognitionRef.current!.start();
+              } catch (err) {
+                console.error('restart error', err);
+              }
+            }, 300);
+          }
+        };
+
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+        };
+
+        recognitionRef.current = recognition;
+      } catch (err) {
+        console.error('Microphone access denied or failed:', err);
       }
     };
 
-    recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-    };
-
-    recognitionRef.current = recognition;
+    initRecognition();
 
     return () => {
-      recognition.stop();
+      if (recognitionRef.current) recognitionRef.current.stop();
     };
   }, [language]);
 

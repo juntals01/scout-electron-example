@@ -12,7 +12,10 @@ import { isDev } from './util.js';
 
 dotenv.config({ path: '.env.local' });
 
+// ✅ Enable media and speech APIs for Electron dev window
 app.commandLine.appendSwitch('enable-media-stream');
+app.commandLine.appendSwitch('enable-speech-api'); // <- required for Web Speech
+app.commandLine.appendSwitch('enable-speech-dispatcher'); // <- improves compatibility (Linux)
 
 // 🔐 Handle permission requests from the renderer (mic/camera)
 ipcMain.handle('check-microphone-permission', async () => {
@@ -78,6 +81,7 @@ app.on('ready', () => {
     webPreferences: {
       preload: getPreloadPath(),
       contextIsolation: true,
+      sandbox: false, // ✅ Optional: can help with mic/cam access in Electron dev
     },
   });
 

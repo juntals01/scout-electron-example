@@ -4,65 +4,58 @@ export default function useSpeechRecognition(language: string) {
   const [text, setText] = useState('');
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const manuallyStoppedRef = useRef(false);
 
   useEffect(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || window.webkitSpeechRecognition;
 
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      console.warn('SpeechRecognition is not supported in this browser.');
+      return;
+    }
 
-    const initRecognition = async () => {
-      const micGranted = await (
-        window as any
-      ).electronAPI?.checkMicrophonePermission?.();
-      if (!micGranted) {
-        console.warn('Microphone permission not granted');
-        return;
+    const recognition: SpeechRecognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = language;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        finalTranscript += event.results[i][0].transcript;
       }
-
-      const recognition: SpeechRecognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = language;
-
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          finalTranscript += event.results[i][0].transcript;
-        }
-        setText(finalTranscript);
-      };
-
-      recognition.onend = () => {
-        if (listening && recognitionRef.current) {
-          setTimeout(() => {
-            try {
-              recognitionRef.current!.start();
-            } catch (err) {
-              console.error('restart error', err);
-            }
-          }, 300);
-        }
-      };
-
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-      };
-
-      recognitionRef.current = recognition;
+      setText(finalTranscript);
     };
 
-    initRecognition();
+    recognition.onend = () => {
+      if (!manuallyStoppedRef.current && recognitionRef.current) {
+        setTimeout(() => {
+          try {
+            recognitionRef.current!.start();
+          } catch (err) {
+            console.error('restart error', err);
+          }
+        }, 300);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+    };
+
+    recognitionRef.current = recognition;
 
     return () => {
-      if (recognitionRef.current) recognitionRef.current.stop();
+      recognition.stop();
     };
-  }, [language, listening]);
+  }, [language]);
 
   const start = () => {
     if (!recognitionRef.current || listening) return;
     setText('');
     setListening(true);
+    manuallyStoppedRef.current = false;
 
     setTimeout(() => {
       try {
@@ -76,6 +69,7 @@ export default function useSpeechRecognition(language: string) {
 
   const stop = () => {
     if (recognitionRef.current && listening) {
+      manuallyStoppedRef.current = true;
       setListening(false);
       recognitionRef.current.stop();
     }

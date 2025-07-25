@@ -101,45 +101,48 @@ ipcMain.handle('save-temp-wav', async (_event, buffer: Uint8Array) => {
   }
 });
 
-ipcMain.handle('transcribe-audio', async (_event, wavPath: string) => {
-  const whisperBinary = getWhisperPath('whisper');
-  const modelPath = getWhisperPath('ggml-base.en.bin');
+ipcMain.handle(
+  'transcribe-audio',
+  async (_event, wavPath: string, language: string) => {
+    const whisperBinary = getWhisperPath('whisper');
+    const modelPath = getWhisperPath('ggml-base.en.bin');
 
-  const args = [
-    wavPath,
-    '--model',
-    modelPath,
-    '--language',
-    'en',
-    '--output-txt',
-  ];
+    const args = [
+      wavPath,
+      '--model',
+      modelPath,
+      '--language',
+      language || 'en',
+      '--output-txt',
+    ];
 
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const child = spawn(whisperBinary, args);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn(whisperBinary, args);
 
-      child.stdout.on('data', (data) => {
-        console.log(`[Whisper] ${data}`);
+        child.stdout.on('data', (data) => {
+          console.log(`[Whisper] ${data}`);
+        });
+
+        child.stderr.on('data', (data) => {
+          console.error(`[Whisper ERROR] ${data}`);
+        });
+
+        child.on('close', (code) => {
+          code === 0
+            ? resolve()
+            : reject(new Error(`Whisper exited with code ${code}`));
+        });
       });
 
-      child.stderr.on('data', (data) => {
-        console.error(`[Whisper ERROR] ${data}`);
-      });
-
-      child.on('close', (code) => {
-        code === 0
-          ? resolve()
-          : reject(new Error(`Whisper exited with code ${code}`));
-      });
-    });
-
-    const transcript = await readFile(`${wavPath}.txt`, 'utf-8');
-    return transcript.trim();
-  } catch (err) {
-    console.error('❌ Whisper transcription error:', err);
-    return '[Transcription failed]';
+      const transcript = await readFile(`${wavPath}.txt`, 'utf-8');
+      return transcript.trim();
+    } catch (err) {
+      console.error('❌ Whisper transcription error:', err);
+      return '[Transcription failed]';
+    }
   }
-});
+);
 
 app.on('ready', () => {
   const mainWindow = new BrowserWindow({

@@ -9,7 +9,7 @@ import TranslationStatusBar from './components/TranslationStatusBar';
 function App() {
   const [fontSize, setFontSize] = useState('X-Large');
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [language, setLanguage] = useState('en-US');
+  const [language, setLanguage] = useState('en');
 
   const toggleDarkMode = () => {
     setIsDarkMode((prev) => !prev);

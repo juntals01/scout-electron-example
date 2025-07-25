@@ -6,8 +6,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkCameraPermission: () => ipcRenderer.invoke('check-camera-permission'),
   saveTempWav: (buffer: Uint8Array) =>
     ipcRenderer.invoke('save-temp-wav', buffer),
-  transcribeAudio: (path: string) =>
-    ipcRenderer.invoke('transcribe-audio', path),
+  transcribeAudio: (path: string, language: string) =>
+    ipcRenderer.invoke('transcribe-audio', path, language),
 });
 
 contextBridge.exposeInMainWorld('electronEnv', {

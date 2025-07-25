@@ -23,7 +23,6 @@ export default function useSpeechRecognition(language: string) {
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
-          console.log('data available');
         }
       };
 
@@ -32,16 +31,16 @@ export default function useSpeechRecognition(language: string) {
           type: 'audio/wav',
         });
         const arrayBuffer = await audioBlob.arrayBuffer();
-        const buffer = new Uint8Array(arrayBuffer); // ✅ use this instead of Buffer
-
-        console.log('buffer ready');
+        const buffer = new Uint8Array(arrayBuffer);
 
         try {
           const wavPath = await window.electronAPI.saveTempWav(buffer);
-          const transcript = await window.electronAPI.transcribeAudio(wavPath);
+          const transcript = await window.electronAPI.transcribeAudio(
+            wavPath,
+            language
+          );
           setText(transcript);
-        } catch (err) {
-          console.error('Transcription error:', err);
+        } catch {
           setText('[Transcription failed]');
         }
 
@@ -49,21 +48,15 @@ export default function useSpeechRecognition(language: string) {
       };
 
       mediaRecorder.start();
-      console.log('recording started');
-    } catch (err) {
-      console.error('Mic error:', err);
+    } catch {
       setListening(false);
     }
   };
 
   const stop = () => {
-    console.log('stop func');
     const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state === 'recording') {
-      console.log('calling stop func');
+    if (recorder?.state === 'recording') {
       recorder.stop();
-    } else {
-      console.warn('Cannot stop — recorder is not recording');
     }
 
     if (streamRef.current) {

@@ -1,88 +1,67 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 export default function useSpeechRecognition(language: string) {
   const [text, setText] = useState('');
   const [listening, setListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const manuallyStoppedRef = useRef(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null); // 🔥 track the mic stream
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  useEffect(() => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      console.warn('SpeechRecognition is not supported in this browser.');
-      return;
-    }
-
-    const initRecognition = async () => {
-      try {
-        // 🔓 Request microphone access to ensure OS/browser permission
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-
-        const recognition: SpeechRecognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = language;
-
-        recognition.onresult = (event: SpeechRecognitionEvent) => {
-          let finalTranscript = '';
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            finalTranscript += event.results[i][0].transcript;
-          }
-          setText(finalTranscript);
-        };
-
-        recognition.onend = () => {
-          if (!manuallyStoppedRef.current && recognitionRef.current) {
-            setTimeout(() => {
-              try {
-                recognitionRef.current!.start();
-              } catch (err) {
-                console.error('restart error', err);
-              }
-            }, 300);
-          }
-        };
-
-        recognition.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
-        };
-
-        recognitionRef.current = recognition;
-      } catch (err) {
-        console.error('Microphone access denied or failed:', err);
-      }
-    };
-
-    initRecognition();
-
-    return () => {
-      if (recognitionRef.current) recognitionRef.current.stop();
-    };
-  }, [language]);
-
-  const start = () => {
-    if (!recognitionRef.current || listening) return;
-    setText('');
+  const start = async () => {
+    if (listening || mediaRecorderRef.current?.state === 'recording') return;
     setListening(true);
-    manuallyStoppedRef.current = false;
+    setText('');
 
-    setTimeout(() => {
-      try {
-        recognitionRef.current!.start();
-      } catch (err) {
-        console.error('Start error:', err);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream; // save stream so we can stop it later
+
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        // audioChunksRef.current.push(event.data);
+        console.log('data available');
+      };
+
+      mediaRecorder.onstop = async () => {
+        // const audioBlob = new Blob(audioChunksRef.current, {
+        //   type: 'audio/wav',
+        // });
+        // const arrayBuffer = await audioBlob.arrayBuffer();
+        // const buffer = Buffer.from(arrayBuffer);
+
+        console.log('buffer');
+
+        // const wavPath = window.electronAPI.saveTempWav(buffer);
+        // const transcript = await window.electronAPI.transcribeAudio(wavPath);
+        setText('transcript');
         setListening(false);
-      }
-    }, 100);
+      };
+
+      mediaRecorder.start();
+      console.log('recording started');
+    } catch (err) {
+      console.error('Mic error:', err);
+      setListening(false);
+    }
   };
 
   const stop = () => {
-    if (recognitionRef.current && listening) {
-      manuallyStoppedRef.current = true;
-      setListening(false);
-      recognitionRef.current.stop();
+    console.log('stop func');
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state === 'recording') {
+      console.log('calling stop func');
+      recorder.stop();
+    } else {
+      console.warn('Cannot stop — recorder is not recording');
+    }
+
+    // 🔥 Stop all mic tracks to remove macOS mic tray icon
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
   };
 
